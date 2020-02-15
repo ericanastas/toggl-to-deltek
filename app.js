@@ -29,86 +29,188 @@ const statusSelector = "#TimesheetStatus";
                 null, null
                 ,
                 {
-                    "regular": 3,
-                    "overtime": 3,
-                    "overtime2": 3,
+                    "regular": 1,
+                    "overtime": 1,
+                    "overtime2": 1,
                     "comment": "Comment"
                 }
 
                 ,
                 {
-                    "regular": 3,
-                    "overtime": 3,
-                    "overtime2": 3,
+                    "regular": 1,
+                    "overtime": 1,
+                    "overtime2": 1,
                     "comment": "Comment"
                 }
 
                 ,
                 {
-                    "regular": 3,
-                    "overtime": 3,
-                    "overtime2": 3,
+                    "regular": 1,
+                    "overtime": 1,
+                    "overtime2": 1,
                     "comment": "Comment"
                 }
                 ,
                 {
-                    "regular": 3,
-                    "overtime": 3,
-                    "overtime2": 3,
+                    "regular": 1,
+                    "overtime": 1,
+                    "overtime2": 1,
                     "comment": "Comment"
                 }
 
                 ,
                 {
-                    "regular": 3,
-                    "overtime": 3,
-                    "overtime2": 3,
+                    "regular": 1,
+                    "overtime": 1,
+                    "overtime2": 1,
                     "comment": "Comment"
                 }
             ]
 
-        }, {
+        },
+        
+        {
             "projectNumber": "TEC100-003",
-            "phase": "04",
+            "phase": "00",
             "task": "0000",
             "laborCode": null,
             "days": [
                 {
-                    "regular": 3,
-                    "overtime": 3,
-                    "overtime2": 3,
+                    "regular": 1,
+                    "overtime": 1,
+                    "overtime2": 1,
                     "comment": "Comment"
                 }
                 ,
 
                 {
-                    "regular": 3,
-                    "overtime": 3,
-                    "overtime2": 3,
+                    "regular": 1,
+                    "overtime": 1,
+                    "overtime2": 1,
                     "comment": "Comment"
                 }
                 ,
 
                 {
-                    "regular": 3,
-                    "overtime": 3,
-                    "overtime2": 3,
+                    "regular": 1,
+                    "overtime": 1,
+                    "overtime2": 1,
                     "comment": "Comment"
                 }
 
                 ,
                 {
-                    "regular": 3,
-                    "overtime": 3,
-                    "overtime2": 3,
+                    "regular": 1,
+                    "overtime": 1,
+                    "overtime2": 1,
                     "comment": "Comment"
                 }
 
                 ,
                 {
-                    "regular": 3,
-                    "overtime": 3,
-                    "overtime2": 3,
+                    "regular": 1,
+                    "overtime": 1,
+                    "overtime2": 1,
+                    "comment": "Comment"
+                }
+                ,
+                null, null
+            ]
+
+        },
+
+        {
+            "projectNumber": "RND100-000",
+            "phase": "00",
+            "task": "0000",
+            "laborCode": null,
+            "days": [
+                {
+                    "regular": 1,
+                    "overtime": 1,
+                    "overtime2": 1,
+                    "comment": "Comment"
+                }
+                ,
+
+                {
+                    "regular": 1,
+                    "overtime": 1,
+                    "overtime2": 1,
+                    "comment": "Comment"
+                }
+                ,
+
+                {
+                    "regular": 1,
+                    "overtime": 1,
+                    "overtime2": 1,
+                    "comment": "Comment"
+                }
+
+                ,
+                {
+                    "regular": 1,
+                    "overtime": 1,
+                    "overtime2": 1,
+                    "comment": "Comment"
+                }
+
+                ,
+                {
+                    "regular": 1,
+                    "overtime": 1,
+                    "overtime2": 1,
+                    "comment": "Comment"
+                }
+                ,
+                null, null
+            ]
+
+        },
+
+        {
+            "projectNumber": "212125-714",
+            "phase": "25",
+            "task": "0401",
+            "laborCode": null,
+            "days": [
+                {
+                    "regular": 1,
+                    "overtime": 1,
+                    "overtime2": 1,
+                    "comment": "Comment"
+                }
+                ,
+
+                {
+                    "regular": 1,
+                    "overtime": 1,
+                    "overtime2": 1,
+                    "comment": "Comment"
+                }
+                ,
+
+                {
+                    "regular": 1,
+                    "overtime": 1,
+                    "overtime2": 1,
+                    "comment": "Comment"
+                }
+
+                ,
+                {
+                    "regular": 1,
+                    "overtime": 1,
+                    "overtime2": 1,
+                    "comment": "Comment"
+                }
+
+                ,
+                {
+                    "regular": 1,
+                    "overtime": 1,
+                    "overtime2": 1,
                     "comment": "Comment"
                 }
                 ,
