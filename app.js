@@ -332,11 +332,10 @@ async function enterProject(page, rowNumber, project) {
 
     console.log("Selecting row " + rowNumber);
 
-    //var rowClickSelector = "#toolsGridBody > table > tbody > tr:nth-child(" + rowNumber+") > td > div";
     var rowClickSelector = "#wbsGridBody > table > tbody > tr:nth-child(" + rowNumber + ") > td:nth-child(1) > div > div.inputContainer > input";
-    //var rowClickSelector = "#hrsGridBody > table > tbody > tr:nth-child(" + rowNumber + ") > td:nth-child(35)>input"
     await page.waitForSelector(rowClickSelector, { visible: true })
-    await delay(1000);
+
+
     await page.click(rowClickSelector);
     await delay(1000);
 
@@ -351,20 +350,54 @@ async function enterProject(page, rowNumber, project) {
     //search for project number
     var projectSearchBoxSelector = "#ProjectSearchByText";
     await page.waitForSelector(projectSearchBoxSelector, { visible: true });
+
+
+
+    //Wait for inital list of projects
+    var projectTrSelector = "#wbs1ListBody > table > tbody > tr"
+    await page.waitFor((s) => document.querySelectorAll(s).length > 0, {}, projectTrSelector);
+
     console.log("Searching for project number: " + project.projectNumber);
     await page.type(projectSearchBoxSelector, project.projectNumber);
 
-    //Wait for project number spinner
-    await waitForSelectorToggle(page, "#wbs1ListBusyIndicator > div.spinner");
+
+    console.log("Waiting for project list to empty");
+    await page.waitFor((s) => document.querySelectorAll(s).length == 0, {}, projectTrSelector);
+
+    console.log("Waiting for project search results");
+    await page.waitFor((s) => document.querySelectorAll(s).length > 0, {}, projectTrSelector);
+
+
+    //Select project
+    var numProjects = await selectProjectTableValue(page, projectTrSelector, project.projectNumber);
+
 
     //Select phase
-    await selectProjectTableValue(page, "#wbs2ListBody > table > tbody", project.phase);
+    var phaseTrSelector = "#wbs2ListBody > table > tbody > tr"
+    if(numProjects>1)
+    {
+        console.log("Waiting for phase list to empty");
+        await page.waitFor((s) => document.querySelectorAll(s).length == 0, {}, phaseTrSelector);
 
-    //Wait for task spinner
-    await waitForSelectorToggle(page, "#wbs3ListBusyIndicator > div.spinner");
+    }
 
-    //select task
-    await selectProjectTableValue(page, "#wbs3ListBody > table > tbody", project.task);
+    console.log("Waiting for phase search results");
+    await page.waitFor((s) => document.querySelectorAll(s).length > 0, {}, phaseTrSelector);
+
+    //if (numProjects > 1) await waitForSelectorToggle(page, phaseTrSelector);
+    var numPhases = await selectProjectTableValue(page, phaseTrSelector, project.phase);
+
+    //Select task
+    var tasksTrSelector = "#wbs3ListBody > table > tbody > tr"
+    if(numPhases>1)
+    {
+        console.log("Waiting for task list to empty");
+        await page.waitFor((s) => document.querySelectorAll(s).length == 0, {}, tasksTrSelector);
+    }
+
+    console.log("Waiting for task search results");
+    await page.waitFor((s) => document.querySelectorAll(s).length > 0, {}, tasksTrSelector);
+    await selectProjectTableValue(page, tasksTrSelector, project.task);
     
 
     //Wait for select button to enable
@@ -449,29 +482,47 @@ async function enterProject(page, rowNumber, project) {
 
 }
 
-async function selectProjectTableValue(page, tableBodySelector, value) {
+async function selectProjectTableValue(page, tableTrSelector, value) {
 
-    //Select phase
-    var rowsSelector = tableBodySelector + " > tr";
+    console.log("Project value selector: " + tableTrSelector);
+    console.log("Project value: " + value);
 
-    await page.waitForFunction("document.querySelectorAll(\"" + rowsSelector + "\").length > 0");
 
-    var rowIndex = await page.$$eval(rowsSelector, function (rows, value) {
+    
+
+    var rowCount = await page.$$eval(tableTrSelector, rows=> rows.length);
+    console.log("rowCount: " + rowCount);
+
+
+    //Select value if more then one row
+  
+    var rowIndex = await page.$$eval(tableTrSelector,  (rows, value)=> {
 
         for (var i = 0; i < rows.length; i++) {
             var curRow = rows[i];
             var curValue = curRow.children[0].children[0].value;
+                console.log("curValue: "+curValue);
             if (curValue == value) return i;
         }
 
         throw value + " not found";
     }, value);
 
-    var rowNum = rowIndex + 1;
 
-    var rowSelector = tableBodySelector + " > tr:nth-child(" + rowNum + ") > td:nth-child(1)>input"
-    await page.click(rowSelector);
+    console.log("rowIndex: " + rowCount);
+
+
+    //click row if more then one row
+    if (rowCount > 1) {
+    var rowNum = rowIndex + 1;
+        var rowSelector = tableTrSelector + ":nth-child(" + rowNum + ") > td:nth-child(1)>input"
+        await page.click(rowSelector);
+    }
+
+    return rowCount;
 }
+
+
 
 
 
