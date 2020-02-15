@@ -149,6 +149,10 @@ async function postProjectHours(projects) {
     const pages = await browser.pages();
     const page = pages[0];
 
+    //https://stackoverflow.com/questions/46198527/puppeteer-log-inside-page-evaluate
+    page.on('console', consoleObj => console.log(consoleObj.text()));
+
+
     if (process.argv.length < 3) throw "Week end date must be passed as argument in YYYY-MM-DD format";
 
     var fragment = "#!employee/timesheet_" + process.argv[2];
