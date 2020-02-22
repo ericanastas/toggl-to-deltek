@@ -270,7 +270,7 @@ async function postProjectHours(projects) {
         await addProject(page, projects[i]);
     }
 
-    console.log("Complete");
+    console.log("Completed Entering Timesheet");
 }
 
 
@@ -315,7 +315,7 @@ async function addProject(page, project) {
     await page.waitFor((s) => document.querySelectorAll(s).length > 0, {}, projectTrSelector);
 
 
-    //Select project
+    //Select Project
     var numProjects = await selectProjectTableValue(page, projectTrSelector, project.projectNumber);
 
     //Select phase
@@ -330,7 +330,7 @@ async function addProject(page, project) {
     await page.waitFor((s) => document.querySelectorAll(s).length > 0, {}, phaseTrSelector);
     var numPhases = await selectProjectTableValue(page, phaseTrSelector, project.phase);
 
-    //Select task
+    //Select Task
     var tasksTrSelector = "#wbs3ListBody > table > tbody > tr"
     if(numPhases>1)
     {
@@ -342,7 +342,6 @@ async function addProject(page, project) {
     await page.waitFor((s) => document.querySelectorAll(s).length > 0, {}, tasksTrSelector);
     await selectProjectTableValue(page, tasksTrSelector, project.task);
     
-
     //Wait for select button to enable
     var selectProjectButtonSelector = "#finishBttn.btn.pn-blue";
     await page.waitForSelector(selectProjectButtonSelector, { visible: true })
@@ -361,7 +360,6 @@ async function addProject(page, project) {
         await page.type(laborCodeInputSelector, project.laborCode);
     }
 
-
     if (project.days.length != 7) throw "project.days != 7";
 
     for (var i = 0; i < 7; i++) {
@@ -377,20 +375,18 @@ async function addProject(page, project) {
         console.log("Adding day " + dayNum);
         
         var dayInputSel = "#hrsGridBody > table > tbody > tr:nth-child(" + rowNumber + ") > td:nth-child(" + dayNum + ")"
-        await page.waitForSelector(dayInputSel, { visible: true })
-        console.log("Clicking day cell" + dayNum);
+        await page.waitForSelector(dayInputSel, { visible: true });
         await page.click(dayInputSel);
 
     
         const formBoxSel = "#popupForm.open";
         const dayArrowSelector = "#bottomArrow";
-
+        
         try {
             await page.waitForSelector(formBoxSel, { visible: true, timeout: 100 })
         }
         catch (err) {
             
-            console.log("Clicking day arrow" + dayNum);
             await page.click(dayArrowSelector);            
             await page.waitForSelector(formBoxSel, { visible: true, timeout: 100 })
         }
@@ -409,14 +405,8 @@ async function addProject(page, project) {
 
 async function selectProjectTableValue(page, tableTrSelector, value) {
 
-    console.log("Project value selector: " + tableTrSelector);
-    console.log("Project value: " + value);
-
-
-
+    console.log("Selecting value: " + value);
     var rowCount = await page.$$eval(tableTrSelector, rows=> rows.length);
-    console.log("rowCount: " + rowCount);
-
 
     //Select value if more then one row  
     var rowIndex = await page.$$eval(tableTrSelector,  (rows, value)=> {
@@ -424,16 +414,11 @@ async function selectProjectTableValue(page, tableTrSelector, value) {
         for (var i = 0; i < rows.length; i++) {
             var curRow = rows[i];
             var curValue = curRow.children[0].children[0].value;
-                console.log("curValue: "+curValue);
             if (curValue == value) return i;
         }
 
         throw value + " not found";
     }, value);
-
-
-    console.log("rowIndex: " + rowCount);
-
 
     //click row if more then one row
     if (rowCount > 1) {
