@@ -1,21 +1,6 @@
 require('dotenv').config()
 const puppeteer = require('puppeteer');
 
-
-const userIdSelector = "#userID";
-const passwordSelector = "#password";
-const loginButtonSelector = "#loginForm > div.buttons.navigator_ngcrm_widgets_button_bar > div > button";
-const wbsTableSelector = "#wbsGridBody > table";
-
-
-
-
-
-const hrsTableSelector = "#hrsGridBody > table";
-const addLineButtonSelector = "#addLineBttn";
-const statusSelector = "#TimesheetStatus";
-
-
 (async () => {
 
     var projects = [
@@ -221,11 +206,9 @@ const statusSelector = "#TimesheetStatus";
 
     ]
 
-    //    hours = [];
+
 
     postProjectHours(projects);
-
-
 
 })()
 
@@ -233,13 +216,6 @@ const statusSelector = "#TimesheetStatus";
 
 
 async function postProjectHours(projects) {
-
-
-
-
-
-
-
 
     const browser = await puppeteer.launch({
         defaultViewport: null,
@@ -254,7 +230,6 @@ async function postProjectHours(projects) {
     //https://stackoverflow.com/questions/46198527/puppeteer-log-inside-page-evaluate
     page.on('console', consoleObj => console.log(consoleObj.text()));
 
-
     if (process.argv.length < 3) throw "Week end date must be passed as argument in YYYY-MM-DD format";
 
     var fragment = "#!employee/timesheet_" + process.argv[2];
@@ -265,82 +240,54 @@ async function postProjectHours(projects) {
     await page.goto(url);
 
     console.log("Entering userid")
+    const userIdSelector = "#userID";
     await page.waitForSelector(userIdSelector, { visible: true })
     await page.type(userIdSelector, process.env.USERID);
 
     console.log("Entering password")
+    const passwordSelector = "#password";
     await page.waitForSelector(passwordSelector, { visible: true })
     await page.type(passwordSelector, process.env.PASSWORD);
 
     console.log("Logging in")
+    const loginButtonSelector = "#loginForm > div.buttons.navigator_ngcrm_widgets_button_bar > div > button";
     await page.waitForSelector(loginButtonSelector, { visible: true })
     await page.click(loginButtonSelector);
 
 
     console.log("Reading current status")
+    const statusSelector = "#TimesheetStatus";
     await page.waitForSelector(statusSelector, { visible: true })
     await page.waitForFunction("document.querySelector(\"" + statusSelector + "\").innerText.length > 0");
     const status = await page.$eval(statusSelector, function (x) { return x.innerText; });
     console.log("Status = " + status);
     if (status != "In Progress") throw "Status is not in progress";
 
-
-    //Counting Rows
-    const wbsTableBodySelector = "#wbsGridBody > table > tbody";
-    await page.waitForSelector(wbsTableBodySelector, { visible: true })
-    var rowCount = await page.$eval(wbsTableBodySelector, tableBody => tableBody.children.length);
-    if (rowCount == undefined) rowCount = 0;
-
-    console.log(projects.length + " rows required");
-    console.log(rowCount + " existing rows");
-
-
-    if (rowCount < projects.length) await addRows(page, projects.length - rowCount);
-    else if (rowCount > projects.length) await deleteRows(page, rowCount - projects.length);
-
-
+  
+    //Add Projects
     for (var i = 0; i < projects.length; i++) {
-        await enterProject(page, i + 1, projects[i]);
+        await addProject(page, projects[i]);
     }
 
-
     console.log("Complete");
-
-
 }
 
 
-function delay(timeout) {
-    return new Promise((resolve) => {
-        setTimeout(resolve, timeout);
-    });
-}
-
-
-async function waitForSelectorToggle(page,selector)
-{
-    //wait for busy field to appear and go away
-    console.log("Waiting for selector to appear: " + selector);
-    await page.waitForSelector(selector, { visible: true });
-
-    console.log("Waiting for selector to disappear: " + selector);
-    await page.waitFor((s) => !document.querySelector(s),{},selector);
-}
-
-async function enterProject(page, rowNumber, project) {
+async function addProject(page, project) {
     console.log("Entering project: " + project.projectNumber + "-" + project.phase + "-" + project.task);
 
-    console.log("Selecting row " + rowNumber);
+    //Add Row
+    const addLineButtonSelector = "#addLineBttn";
+    await page.waitForSelector(addLineButtonSelector, { visible: true })
+    await page.click(addLineButtonSelector);
+    
 
-    var rowClickSelector = "#wbsGridBody > table > tbody > tr:nth-child(" + rowNumber + ") > td:nth-child(1) > div > div.inputContainer > input";
-    await page.waitForSelector(rowClickSelector, { visible: true })
-
-
-    await page.click(rowClickSelector);
-    await delay(1000);
-
-
-
+    //Get Row count
+    const wbsTableBodySelector = "#wbsGridBody > table > tbody";
+    await page.waitForSelector(wbsTableBodySelector, { visible: true })
+    var rowNumber = await page.$eval(wbsTableBodySelector, tableBody => tableBody.children.length);
+    console.log("rowNumber = " + rowNumber);
+    
     //Clicks search button
     var projSearchButtonSelector = "#wbsGridBody > table > tbody > tr:nth-child(" + rowNumber + ") > td:nth-child(1) > div > button";
     await page.waitForSelector(projSearchButtonSelector, { visible: true });
@@ -350,7 +297,6 @@ async function enterProject(page, rowNumber, project) {
     //search for project number
     var projectSearchBoxSelector = "#ProjectSearchByText";
     await page.waitForSelector(projectSearchBoxSelector, { visible: true });
-
 
 
     //Wait for inital list of projects
@@ -371,20 +317,16 @@ async function enterProject(page, rowNumber, project) {
     //Select project
     var numProjects = await selectProjectTableValue(page, projectTrSelector, project.projectNumber);
 
-
     //Select phase
     var phaseTrSelector = "#wbs2ListBody > table > tbody > tr"
     if(numProjects>1)
     {
         console.log("Waiting for phase list to empty");
         await page.waitFor((s) => document.querySelectorAll(s).length == 0, {}, phaseTrSelector);
-
     }
 
     console.log("Waiting for phase search results");
     await page.waitFor((s) => document.querySelectorAll(s).length > 0, {}, phaseTrSelector);
-
-    //if (numProjects > 1) await waitForSelectorToggle(page, phaseTrSelector);
     var numPhases = await selectProjectTableValue(page, phaseTrSelector, project.phase);
 
     //Select task
@@ -419,51 +361,38 @@ async function enterProject(page, rowNumber, project) {
     }
 
 
+    if (project.days.length != 7) throw "project.days != 7";
+
     for (var i = 0; i < 7; i++) {
 
-
         var dayNum = i + 1;
-        console.log("Adding day " + dayNum);
-
-        if (project.days.length != 7) throw "project.days != 7";
         var currentDay = project.days[i];
 
         if (currentDay == null) {
             console.log("Skipping day " + dayNum);
             continue;
         }
-
+                
+        console.log("Adding day " + dayNum);
+        
         var dayInputSel = "#hrsGridBody > table > tbody > tr:nth-child(" + rowNumber + ") > td:nth-child(" + dayNum + ")"
-
-        //await page.type(dayInputSel, currentDay.regular.toString());
-
         await page.waitForSelector(dayInputSel, { visible: true })
         console.log("Clicking day cell" + dayNum);
         await page.click(dayInputSel);
 
-
-        var dayArrowSelector = "#bottomArrow";
-        var formBoxSel = "#popupForm.open";
-
-
+    
+        const formBoxSel = "#popupForm.open";
+        const dayArrowSelector = "#bottomArrow";
 
         try {
-
             await page.waitForSelector(formBoxSel, { visible: true, timeout: 100 })
-
-
-
         }
         catch (err) {
+            
             console.log("Clicking day arrow" + dayNum);
-            await page.click(dayArrowSelector);
-
+            await page.click(dayArrowSelector);            
             await page.waitForSelector(formBoxSel, { visible: true, timeout: 100 })
         }
-
-
-
-
 
         var regularSelector = "#regHrs"
         var overTimeSelector = "#ovtHrs"
@@ -474,12 +403,7 @@ async function enterProject(page, rowNumber, project) {
         if (currentDay.overtime) await page.type(overTimeSelector, currentDay.overtime.toString());
         if (currentDay.overtime2) await page.type(overTime2Selector, currentDay.overtime2.toString());
         if (currentDay.comment) await page.type(comentSelector, currentDay.comment);
-
-
     }
-
-
-
 }
 
 async function selectProjectTableValue(page, tableTrSelector, value) {
@@ -488,14 +412,12 @@ async function selectProjectTableValue(page, tableTrSelector, value) {
     console.log("Project value: " + value);
 
 
-    
 
     var rowCount = await page.$$eval(tableTrSelector, rows=> rows.length);
     console.log("rowCount: " + rowCount);
 
 
-    //Select value if more then one row
-  
+    //Select value if more then one row  
     var rowIndex = await page.$$eval(tableTrSelector,  (rows, value)=> {
 
         for (var i = 0; i < rows.length; i++) {
@@ -521,50 +443,3 @@ async function selectProjectTableValue(page, tableTrSelector, value) {
 
     return rowCount;
 }
-
-
-
-
-
-async function addRows(page, count) {
-
-    console.log("Adding " + count + " rows");
-
-
-    for (var i = 0; i < count; i++) {
-        await page.waitForSelector(addLineButtonSelector, { visible: true })
-        await page.click(addLineButtonSelector);
-    }
-
-}
-
-
-async function deleteRows(page, count) {
-
-    console.log("Deleting " + count + " rows");
-
-
-    var deleteMenuItemSelector = "#toolsGridContainerDdwn > div > ul > li:nth-child(3) > a";
-    var lastRowSelector = "#hrsGridBody>table>tbody>tr:last-of-type>td:last-of-type";
-    var rowEditCaretSelector = "#toolsGridBody > table > tbody > tr.selected";
-    var delConfirmButtonSelector = "#buttons > div > button.btn.pn-blue.primary";
-
-
-
-
-    for (var i = 0; i < count; i++) {
-
-        await page.waitForSelector(lastRowSelector, { visible: true })
-        await page.click(lastRowSelector);
-
-        await page.waitForSelector(rowEditCaretSelector, { visible: true })
-        await page.click(rowEditCaretSelector);
-
-        await page.waitForSelector(deleteMenuItemSelector, { visible: true })
-        await page.click(deleteMenuItemSelector);
-
-        await page.waitForSelector(delConfirmButtonSelector, { visible: true })
-        await page.click(delConfirmButtonSelector);
-    }
-}
-
