@@ -19,15 +19,11 @@ const got = require('got');
     console.log("sinceStr = " + sinceStr);
     console.log("untilStr = " + untilStr);
 
-
-
     var togglTimes = await getTogglTime(sinceStr, untilStr);
 
     var projects = toggleTimesToProjects(togglTimes, weDate);
 
-
-
-    //var projects = getSampleProjects();
+    //projects = getSampleProjects();
     postProjectHours(projects, weekEnd);
 
 })()
@@ -251,25 +247,7 @@ function toggleTimesToProjects(togglTimes, weDate)
 
     console.log("Week End Date:"+ weDate);
 
-
-
     var projects = [];
-
-    var sampProj = [    {
-                        "projectNumber": "TEC100-001",
-                        "phase": "04",
-                        "task": "0000",
-                        "laborCode": null,
-                        "days": [    
-                                    {
-                                        "regular": 1,
-                                        "overtime": 1,
-                                        "overtime2": 1,
-                                        "comment": "Comment"
-                                    }
-                                ]
-                        }
-                    ];
 
     const regex = /^([A-Z0-9]{6}-\d{3})-(\d{2})-(\d{4})(\s(.*))?$/;
 
@@ -279,16 +257,16 @@ function toggleTimesToProjects(togglTimes, weDate)
     console.log("Week Start:" + wstartDate);
     var wstartDateMs = wstartDate.getTime();
 
-    for (var i=0; i < togglTimes.length; i++)
+    for ( i=0; i < togglTimes.length; i++)
     {
         var toggleTime =togglTimes[i];
 
         var startDate = new Date(toggleTime.start);
         console.log("Start Date:" + startDate);
-        if(!toggleTime.project) throw new "Time entry missing project. StartDate: "+startDate;
+        if(!toggleTime.project) throw  "Time entry missing project. StartDate: "+startDate.toString();
 
         //Parse project information from client name
-        if (toggleTime.client == null) throw new "Client missing from project: " + toggleTime.project;
+        if (toggleTime.client == null) throw "Client missing from project: " + toggleTime.project;
         var match = toggleTime.client.match(regex);
         if(match == null) throw "Could not parse client: "+ toggleTime.client;
 
@@ -310,12 +288,71 @@ function toggleTimesToProjects(togglTimes, weDate)
         //Read duration in hours
         var durHr = toggleTime.dur / 3.6e6;
 
+
+        //Find existing project with matching project number and comment
+        var project = projects.find(function(p){
+            if (p.projectNumber != projectNumber) return false;
+            if (p.phase != phase) return false;
+            if (p.task != task) return false;
+            if (p.comment != comment) return false;
+            return true;
+        })
+
+        //Create a new project if existing is not found
+        if(project == null)
+        {
+            project = {
+                "projectNumber": projectNumber,
+                "phase": phase,
+                "task": task,
+                "laborCode": null,
+                "comment": comment,
+                "days": [null, null, null, null, null, null, null]
+            }
+            projects.push(project);
+        }
+
+
+        //Get
+        var day = project.days[dayIndex];
+
+        if(day == null)
+        {
+            day = {
+                "regular": durHr,
+                "overtime": 0,
+                "overtime2": 0,
+                "comment": comment
+            };
+
+            project.days[dayIndex] = day;
+
+        }else{
+            var newDur = day.regular + durHr;
+            day.regular = newDur;
     }
 
+    }//End of time entries for loop
 
                         
+    //Round results to nearest 15 min
+    for(i= 0;i<projects.length;i++)
+    {
+        var project = projects[i];
 
+        for (j = 0; j < project.days.length; j++) {
+            var day = project.days[j];
+
+            if(day != null)
+            {
+                var quarterHour = 0.25;
     
+                day.regular = Math.round(day.regular / quarterHour) * quarterHour;
+                day.overtime = Math.round(day.overtime / quarterHour) * quarterHour;
+                day.overtime2 = Math.round(day.overtime / quarterHour) * quarterHour;
+            }
+        }
+    }
     
     return projects;
 
@@ -582,9 +619,26 @@ async function addProject(page, project) {
         var overTime2Selector = "#ovt2Hrs"
         var comentSelector = "#commentEntry";
 
-        if (currentDay.regular) await page.type(regularSelector, currentDay.regular.toString());
-        if (currentDay.overtime) await page.type(overTimeSelector, currentDay.overtime.toString());
-        if (currentDay.overtime2) await page.type(overTime2Selector, currentDay.overtime2.toString());
+        const enterChar = String.fromCharCode(13);
+
+        if(currentDay.regular>0)
+        {
+            var regularString = " " + currentDay.regular.toString() + enterChar;
+            await page.type(regularSelector, regularString);
+        }
+
+
+        if (currentDay.overtime > 0) {
+            var overtimestring = " " + currentDay.overtime.toString() + enterChar;
+            await page.type(overTimeSelector, overtimestring);
+        }
+
+
+        if (currentDay.overtime2 > 0) {
+            var overtime2string = " " + currentDay.overtime2.toString() + enterChar;
+            await page.type(overTime2Selector, overtime2string);
+        }
+        
         if (currentDay.comment) await page.type(comentSelector, currentDay.comment);
     }
 }
