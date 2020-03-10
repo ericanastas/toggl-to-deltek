@@ -44,39 +44,39 @@ function getSampleProjects()
                 ,
                 {
                     "regular": 1,
-                    "overtime": 1,
-                    "overtime2": 1,
+                    "overtime": 2,
+                    "overtime2": 3,
                     "comment": "Comment"
                 }
 
                 ,
                 {
                     "regular": 1,
-                    "overtime": 1,
-                    "overtime2": 1,
+                    "overtime": 2,
+                    "overtime2": 3,
                     "comment": "Comment"
                 }
 
                 ,
                 {
                     "regular": 1,
-                    "overtime": 1,
-                    "overtime2": 1,
+                    "overtime": 2,
+                    "overtime2": 3,
                     "comment": "Comment"
                 }
                 ,
                 {
                     "regular": 1,
-                    "overtime": 1,
-                    "overtime2": 1,
+                    "overtime": 2,
+                    "overtime2": 3,
                     "comment": "Comment"
                 }
 
                 ,
                 {
                     "regular": 1,
-                    "overtime": 1,
-                    "overtime2": 1,
+                    "overtime": 2,
+                    "overtime2": 3,
                     "comment": "Comment"
                 }
             ]
@@ -90,41 +90,41 @@ function getSampleProjects()
             "laborCode": null,
             "days": [
                 {
-                    "regular": 1,
-                    "overtime": 1,
-                    "overtime2": 1,
+                    "regular": 1.23,
+                    "overtime": 0,
+                    "overtime2": 0,
                     "comment": "Comment"
                 }
                 ,
 
                 {
-                    "regular": 1,
-                    "overtime": 1,
-                    "overtime2": 1,
+                    "regular": 0,
+                    "overtime": 1.23,
+                    "overtime2": 0,
                     "comment": "Comment"
                 }
                 ,
 
                 {
-                    "regular": 1,
-                    "overtime": 1,
-                    "overtime2": 1,
+                    "regular": 0,
+                    "overtime": 0,
+                    "overtime2": 1.23,
                     "comment": "Comment"
                 }
 
                 ,
                 {
-                    "regular": 1,
-                    "overtime": 1,
-                    "overtime2": 1,
+                    "regular": 1.23,
+                    "overtime": 0,
+                    "overtime2": 0,
                     "comment": "Comment"
                 }
 
                 ,
                 {
-                    "regular": 1,
-                    "overtime": 1,
-                    "overtime2": 1,
+                    "regular": 0,
+                    "overtime": 1.23,
+                    "overtime2": 0,
                     "comment": "Comment"
                 }
                 ,
@@ -140,91 +140,41 @@ function getSampleProjects()
             "laborCode": null,
             "days": [
                 {
-                    "regular": 1,
-                    "overtime": 1,
-                    "overtime2": 1,
+                    "regular": 0,
+                    "overtime": 4.56,
+                    "overtime2": 0,
                     "comment": "Comment"
                 }
                 ,
 
                 {
-                    "regular": 1,
-                    "overtime": 1,
-                    "overtime2": 1,
+                    "regular": 0,
+                    "overtime": 0,
+                    "overtime2": 4.56,
                     "comment": "Comment"
                 }
                 ,
 
                 {
-                    "regular": 1,
-                    "overtime": 1,
-                    "overtime2": 1,
+                    "regular": 4.56,
+                    "overtime": 0,
+                    "overtime2": 0,
                     "comment": "Comment"
                 }
 
                 ,
                 {
-                    "regular": 1,
-                    "overtime": 1,
-                    "overtime2": 1,
+                    "regular": 0,
+                    "overtime": 4.56,
+                    "overtime2": 0,
                     "comment": "Comment"
                 }
 
                 ,
                 {
-                    "regular": 1,
-                    "overtime": 1,
-                    "overtime2": 1,
-                    "comment": "Comment"
-                }
-                ,
-                null, null
-            ]
-
-        },
-
-        {
-            "projectNumber": "212125-714",
-            "phase": "25",
-            "task": "0401",
-            "laborCode": null,
-            "days": [
-                {
-                    "regular": 1,
-                    "overtime": 1,
-                    "overtime2": 1,
-                    "comment": "Comment"
-                }
-                ,
-
-                {
-                    "regular": 1,
-                    "overtime": 1,
-                    "overtime2": 1,
-                    "comment": "Comment"
-                }
-                ,
-
-                {
-                    "regular": 1,
-                    "overtime": 1,
-                    "overtime2": 1,
-                    "comment": "Comment"
-                }
-
-                ,
-                {
-                    "regular": 1,
-                    "overtime": 1,
-                    "overtime2": 1,
-                    "comment": "Comment"
-                }
-
-                ,
-                {
-                    "regular": 1,
-                    "overtime": 1,
-                    "overtime2": 1,
+                    "regular": 0,
+                    "overtime": 0,
+                    "overtime2": 4.56,
                     "comment": "Comment"
                 }
                 ,
@@ -232,6 +182,8 @@ function getSampleProjects()
             ]
 
         }
+
+
 
     ]
 
@@ -330,11 +282,11 @@ function toggleTimesToProjects(togglTimes, weDate)
         }else{
             var newDur = day.regular + durHr;
             day.regular = newDur;
-    }
+        }
 
     }//End of time entries for loop
 
-                        
+
     //Round results to nearest 15 min
     for(i= 0;i<projects.length;i++)
     {
@@ -346,7 +298,7 @@ function toggleTimesToProjects(togglTimes, weDate)
             if(day != null)
             {
                 var quarterHour = 0.25;
-    
+
                 day.regular = Math.round(day.regular / quarterHour) * quarterHour;
                 day.overtime = Math.round(day.overtime / quarterHour) * quarterHour;
                 day.overtime2 = Math.round(day.overtime / quarterHour) * quarterHour;
