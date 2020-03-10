@@ -2,6 +2,8 @@
 
 NodeJS script which automatically fills out a [Deltek Vision Timesheet](https://www.deltek.com/en/products/project-erp/vision) from time entries in [Toggl](https://toggl.com/)
 
+![Demo Video](demo.gif)
+
 Deltek projects are identfied by matching the client of each Toggl project to project number in Deltek. 
 
 Client names must match the following format: `XXXXXX-000-00-0000`
