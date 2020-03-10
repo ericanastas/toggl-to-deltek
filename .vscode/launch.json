@@ -12,7 +12,7 @@
                 "<node_internals>/**"
             ],
             "program": "${workspaceFolder}\\app.js",
-            "args": ["2020-02-14"]
+            "args": ["2020-03-6"]
         }
     ]
 }

@@ -1,7 +1,11 @@
 require('dotenv').config()
 const puppeteer = require('puppeteer');
+const got = require('got');
 
 (async () => {
+
+    if (process.argv.length < 3) throw "Week end date must be passed as argument in YYYY-MM-DD format";
+    var weekEnd = process.argv[2];
 
     var projects = [
 
@@ -206,16 +210,104 @@ const puppeteer = require('puppeteer');
 
     ]
 
+    var weDate = new Date(weekEnd);
+    var untilDate = new Date(weDate.valueOf());
+    untilDate.setDate(untilDate.getDate()+1);
+
+    var sinceDate = new Date(weDate.valueOf());
+    sinceDate.setDate(sinceDate.getDate() -6);
 
 
-    postProjectHours(projects);
+    var togglTimes = await getTogglTime(sinceDate, untilDate);
+
+
+
+    postProjectHours(projects, weekEnd);
 
 })()
 
 
 
 
-async function postProjectHours(projects) {
+
+async function getTogglTime(since, until)
+
+{
+    var wsReqOpt = {
+        url:"https://www.toggl.com/api/v8/workspaces",
+        method:"GET",
+        username: process.env.TOGGL_TOKEN,
+        password: 'api_token'
+    }
+
+    var wsResp = await got(wsReqOpt);
+
+
+    var workspaces = JSON.parse(wsResp.body);
+
+    var wid = null;
+
+    for (i = 0; i < workspaces.length;i++) {
+        var wksp = workspaces[i];
+        console.log(wksp.name + " " + wksp.id);
+    }
+
+    if (workspaces.length == 1) {
+        wid = workspaces[0].id;
+        console.log("One Toggl workspace found with id: " + wid);
+    }
+    else if (process.env.TOGGL_WID) {
+        wid = process.env.TOGGL_WID;
+        console.log("Using configured Toggl workspace id: " + wid);
+    }
+    else {
+        console.log("Multiple workspaces found, and TOGGL_WID not configured");
+    }
+
+    var total_count = 0;
+    var togglEntires =[];
+    var page =1;
+    var user_agent = "toggl-to-deltek";
+
+    var timeRangeParameters = "";
+
+    if(since)
+    {
+        timeRangeParameters += "&since=" + since.toISOString().substring(0, 10);
+    }
+
+    if (until) {
+        timeRangeParameters += "&until=" + until.toISOString().substring(0, 10);
+    }
+
+
+    do
+    {
+        var togglDetReq = {
+            url: "https://toggl.com/reports/api/v2/details?user_agent=" + user_agent+"&workspace_id="+wid+"&page="+page,
+            method: "GET",
+            username: process.env.TOGGL_TOKEN,
+            password: 'api_token'
+        }
+
+        var togglDetResp = await got(togglDetReq);
+        var toggleDetObj = JSON.parse(togglDetResp.body);
+        total_count = toggleDetObj.total_count;
+
+        for (i = 0; i < toggleDetObj.data.length;i++)
+        {
+            togglEntires.push(toggleDetObj.data[i]);
+        }
+
+        page++;
+
+    } while (togglEntires.length < total_count)
+
+    return togglEntires;
+}
+
+
+async function postProjectHours(projects, weekEnd) {
 
     const browser = await puppeteer.launch({
         defaultViewport: null,
@@ -227,13 +319,7 @@ async function postProjectHours(projects) {
     const pages = await browser.pages();
     const page = pages[0];
 
-    //https://stackoverflow.com/questions/46198527/puppeteer-log-inside-page-evaluate
-    //Uncomment to log browser log to console
-    //page.on('console', consoleObj => console.og(consoleObj.text()));
-
-    if (process.argv.length < 3) throw "Week end date must be passed as argument in YYYY-MM-DD format";
-
-    var fragment = "#!employee/timesheet_" + process.argv[2];
+    var fragment = "#!employee/timesheet_" + weekEnd;
 
     var url = process.env.URL + fragment;
 
@@ -255,7 +341,6 @@ async function postProjectHours(projects) {
     await page.waitForSelector(loginButtonSelector, { visible: true })
     await page.click(loginButtonSelector);
 
-
     console.log("Reading current status")
     const statusSelector = "#TimesheetStatus";
     await page.waitForSelector(statusSelector, { visible: true })
@@ -264,7 +349,6 @@ async function postProjectHours(projects) {
     console.log("Status = " + status);
     if (status != "In Progress") throw "Status is not in progress";
 
-  
     //Add Projects
     for (var i = 0; i < projects.length; i++) {
         await addProject(page, projects[i]);
