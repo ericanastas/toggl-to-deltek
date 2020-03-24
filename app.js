@@ -5,26 +5,35 @@ const got = require('got');
 (async () => {
 
     if (process.argv.length < 3) throw "Week end date must be passed as argument in YYYY-MM-DD format";
-    var weekEnd = process.argv[2];
 
 
-    var weDate = new Date(weekEnd);
-    var untilDate = new Date(weDate.valueOf());
-    var untilStr = untilDate.toISOString().substring(0, 10);
+                                           012345678 
+    var weekEndIsoStr = process.argv[2]; //YYYY-MM-DD
 
-    var sinceDate = new Date(weDate.valueOf());
-    sinceDate.setDate(sinceDate.getDate() - 6);
-    var sinceStr = sinceDate.toISOString().substring(0, 10);
+    var weekEndIsoYearStr = weekEndIsoStr.substr(0,4);
+    var weekEndIsoMonthStr = weekEndIsoStr.substr(5, 2);
+    var weekEndIsoDaysStr = weekEndIsoStr.substr(8, 2);
 
-    console.log("sinceStr = " + sinceStr);
-    console.log("untilStr = " + untilStr);
+    var weDate = new Date(weekEndIsoYearStr, weekEndIsoMonthStr - 1, weekEndIsoDaysStr); //Friday at 12:00 AM PST
 
-    var togglTimes = await getTogglTime(sinceStr, untilStr);
+    var weekStartDateLocal = new Date(weDate.valueOf());
+    weekStartDateLocal.setDate(weekStartDateLocal.getDate() - 6); //Saturday at 12:00 AM
 
-    var projects = toggleTimesToProjects(togglTimes, weDate);
+    var weekStartIsoYearStr = weekStartDateLocal.getFullYear();
+    var weekStartIsoMonthStr = ('0' + (weekStartDateLocal.getMonth() + 1)).substr(-2,2);
+    var weekStartIsoDaysStr = ('0' + weekStartDateLocal.getDate()).substr(-2,2);
+
+    var weekStartIsoStr = weekStartIsoYearStr + "-" + weekStartIsoMonthStr + "-" + weekStartIsoDaysStr;
+
+    console.log("weekStartIsoStr = " + weekStartIsoStr);
+    console.log("weekEndIsoStr = " + weekEndIsoStr);
+
+    var togglTimes = await getTogglTime(weekStartIsoStr, weekEndIsoStr);
+
+    var projects = toggleTimesToProjects(togglTimes, weekStartDateLocal);
 
     //projects = getSampleProjects();
-    postProjectHours(projects, weekEnd);
+    postProjectHours(projects, weekEndIsoStr);
 
 })()
 
@@ -194,20 +203,17 @@ function getSampleProjects()
 
 
 
-function toggleTimesToProjects(togglTimes, weDate)
+function toggleTimesToProjects(togglTimes, weekStartDateLocal)
 {
 
-    console.log("Week End Date:"+ weDate);
+    console.log("Week Start Date:" + weekStartDateLocal);
 
     var projects = [];
 
     const regex = /^([A-Z0-9]{6}-\d{3})-(\d{2})-(\d{4})(\s(.*))?$/;
 
     //Calc the week start time
-    var wstartDate = new Date(weDate.valueOf());
-    wstartDate.setDate(wstartDate.getDate() - 6);
-    console.log("Week Start:" + wstartDate);
-    var wstartDateMs = wstartDate.getTime();
+    var wstartDateMs = weekStartDateLocal.getTime();
 
     for ( i=0; i < togglTimes.length; i++)
     {
