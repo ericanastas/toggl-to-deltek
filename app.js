@@ -1,16 +1,17 @@
 require('dotenv').config()
 const puppeteer = require('puppeteer');
 const got = require('got');
+const fs = require('fs');
 
 (async () => {
 
     if (process.argv.length < 3) throw "Week end date must be passed as argument in YYYY-MM-DD format";
 
 
-                                           012345678 
+    
     var weekEndIsoStr = process.argv[2]; //YYYY-MM-DD
 
-    var weekEndIsoYearStr = weekEndIsoStr.substr(0,4);
+    var weekEndIsoYearStr = weekEndIsoStr.substr(0, 4);
     var weekEndIsoMonthStr = weekEndIsoStr.substr(5, 2);
     var weekEndIsoDaysStr = weekEndIsoStr.substr(8, 2);
 
@@ -20,8 +21,8 @@ const got = require('got');
     weekStartDateLocal.setDate(weekStartDateLocal.getDate() - 6); //Saturday at 12:00 AM
 
     var weekStartIsoYearStr = weekStartDateLocal.getFullYear();
-    var weekStartIsoMonthStr = ('0' + (weekStartDateLocal.getMonth() + 1)).substr(-2,2);
-    var weekStartIsoDaysStr = ('0' + weekStartDateLocal.getDate()).substr(-2,2);
+    var weekStartIsoMonthStr = ('0' + (weekStartDateLocal.getMonth() + 1)).substr(-2, 2);
+    var weekStartIsoDaysStr = ('0' + weekStartDateLocal.getDate()).substr(-2, 2);
 
     var weekStartIsoStr = weekStartIsoYearStr + "-" + weekStartIsoMonthStr + "-" + weekStartIsoDaysStr;
 
@@ -32,14 +33,82 @@ const got = require('got');
 
     var projects = toggleTimesToProjects(togglTimes, weekStartDateLocal);
 
+
+    saveManualTimesheetHours(projects, weekEndIsoStr);
+
     //projects = getSampleProjects();
     postProjectHours(projects, weekEndIsoStr);
 
 })()
 
+function pad(n, width, z) {
+    z = z || '0';
+    n = n + '';
+    return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
+}
 
-function getSampleProjects()
-{
+
+function saveManualTimesheetHours(projects, weekEndIsoStr) {
+
+    
+
+        
+    
+
+    var manualTimesheet = {};
+
+
+    projects.forEach(project => {
+
+
+        var projNum = project.projectNumber + "-" + project.phase + "-" + project.task;
+
+        var combinedHours = project.days.map(function (day) {
+            if (day == null) return 0;
+            else return day.overtime + day.overtime2 + day.regular;
+        }
+        );
+
+        if (manualTimesheet.hasOwnProperty(projNum) == false) {
+            manualTimesheet[projNum] = combinedHours;
+        }
+        else {
+            for (var i = 0; i < 7; i++) {
+                manualTimesheet[projNum][i] = manualTimesheet[projNum][i] + combinedHours[i];
+            }
+        }
+
+    });
+
+
+    var timeSheetFileName = weekEndIsoStr + ".txt";
+
+    var header = "Project Number        SAT      SUN    MON     TUE     WEN     THU     FRI\n";
+    console.log(header);
+    var timeSheetFileData = header;
+
+    for (var projNum in manualTimesheet) {
+        var line = projNum;
+        line += "    ";
+
+        for (var i = 0; i < 7; i++) {
+            var dayHours = manualTimesheet[projNum][i];
+            var dayHoursString = pad(dayHours.toFixed(2), 5);
+
+            line += dayHoursString;
+            line += "   ";
+        }
+        console.log(line);
+        timeSheetFileData+= line+"\n";
+    }
+
+
+
+    if (fs.existsSync(timeSheetFileName)) fs.unlinkSync(timeSheetFileName);
+    fs.writeFileSync(timeSheetFileName, timeSheetFileData + "\n");
+}
+
+function getSampleProjects() {
 
     var projects = [
 
@@ -202,37 +271,37 @@ function getSampleProjects()
 }
 
 
+const clientNameRegex = /^([A-Z0-9]{6}-\d{3})-(\d{2})-(\d{4})(\s(.*))?$/;
 
-function toggleTimesToProjects(togglTimes, weekStartDateLocal)
-{
+
+function toggleTimesToProjects(togglTimes, weekStartDateLocal) {
 
     console.log("Week Start Date:" + weekStartDateLocal);
 
     var projects = [];
 
-    const regex = /^([A-Z0-9]{6}-\d{3})-(\d{2})-(\d{4})(\s(.*))?$/;
+
 
     //Calc the week start time
     var wstartDateMs = weekStartDateLocal.getTime();
 
-    for ( i=0; i < togglTimes.length; i++)
-    {
-        var toggleTime =togglTimes[i];
+    for (i = 0; i < togglTimes.length; i++) {
+        var toggleTime = togglTimes[i];
 
         var startDate = new Date(toggleTime.start);
         console.log("Start Date:" + startDate);
-        if(!toggleTime.project) throw  "Time entry missing project. StartDate: "+startDate.toString();
+        if (!toggleTime.project) throw "Time entry missing project. StartDate: " + startDate.toString();
 
         //Parse project information from client name
         if (toggleTime.client == null) throw "Client missing from project: " + toggleTime.project;
-        var match = toggleTime.client.match(regex);
-        if(match == null) throw "Could not parse client: "+ toggleTime.client;
+        var match = toggleTime.client.match(clientNameRegex);
+        if (match == null) throw "Could not parse client: " + toggleTime.client;
 
         var projectNumber = match[1];
         var phase = match[2];
         var task = match[3];
 
-        var comment ="";
+        var comment = "";
         if (match[5]) comment = match[5];
 
         //Determine the day index
@@ -241,14 +310,14 @@ function toggleTimesToProjects(togglTimes, weekStartDateLocal)
         var differenceMs = startDateMs - wstartDateMs;
 
         const oneDayMs = 1000 * 60 * 60 * 24;
-        var dayIndex = Math.floor(differenceMs/oneDayMs)
+        var dayIndex = Math.floor(differenceMs / oneDayMs)
 
         //Read duration in hours
         var durHr = toggleTime.dur / 3.6e6;
 
 
         //Find existing project with matching project number and comment
-        var project = projects.find(function(p){
+        var project = projects.find(function (p) {
             if (p.projectNumber != projectNumber) return false;
             if (p.phase != phase) return false;
             if (p.task != task) return false;
@@ -257,8 +326,7 @@ function toggleTimesToProjects(togglTimes, weekStartDateLocal)
         })
 
         //Create a new project if existing is not found
-        if(project == null)
-        {
+        if (project == null) {
             project = {
                 "projectNumber": projectNumber,
                 "phase": phase,
@@ -274,8 +342,7 @@ function toggleTimesToProjects(togglTimes, weekStartDateLocal)
         //Get
         var day = project.days[dayIndex];
 
-        if(day == null)
-        {
+        if (day == null) {
             day = {
                 "regular": durHr,
                 "overtime": 0,
@@ -285,7 +352,7 @@ function toggleTimesToProjects(togglTimes, weekStartDateLocal)
 
             project.days[dayIndex] = day;
 
-        }else{
+        } else {
             var newDur = day.regular + durHr;
             day.regular = newDur;
         }
@@ -294,15 +361,13 @@ function toggleTimesToProjects(togglTimes, weekStartDateLocal)
 
 
     //Round results to nearest 15 min
-    for(i= 0;i<projects.length;i++)
-    {
+    for (i = 0; i < projects.length; i++) {
         var project = projects[i];
 
         for (j = 0; j < project.days.length; j++) {
             var day = project.days[j];
 
-            if(day != null)
-            {
+            if (day != null) {
                 var quarterHour = 0.25;
 
                 day.regular = Math.round(day.regular / quarterHour) * quarterHour;
@@ -311,7 +376,7 @@ function toggleTimesToProjects(togglTimes, weekStartDateLocal)
             }
         }
     }
-    
+
     return projects;
 
 }
@@ -323,12 +388,10 @@ function toggleTimesToProjects(togglTimes, weekStartDateLocal)
 
 
 
-async function getTogglTime(since, until)
-
-{
+async function getTogglTime(since, until) {
     var wsReqOpt = {
-        url:"https://www.toggl.com/api/v8/workspaces",
-        method:"GET",
+        url: "https://www.toggl.com/api/v8/workspaces",
+        method: "GET",
         username: process.env.TOGGL_TOKEN,
         password: 'api_token'
     }
@@ -340,7 +403,7 @@ async function getTogglTime(since, until)
 
     var wid = null;
 
-    for (i = 0; i < workspaces.length;i++) {
+    for (i = 0; i < workspaces.length; i++) {
         var wksp = workspaces[i];
         console.log(wksp.name + " " + wksp.id);
     }
@@ -358,14 +421,13 @@ async function getTogglTime(since, until)
     }
 
     var total_count = 0;
-    var togglEntires =[];
-    var page =1;
+    var togglEntires = [];
+    var page = 1;
     var user_agent = "toggl-to-deltek";
 
     var timeRangeParameters = "";
 
-    if(since)
-    {
+    if (since) {
         timeRangeParameters += "&since=" + since;
     }
 
@@ -373,10 +435,9 @@ async function getTogglTime(since, until)
         timeRangeParameters += "&until=" + until;
     }
 
-    do
-    {
+    do {
         var togglDetReq = {
-            url: "https://toggl.com/reports/api/v2/details?user_agent=" + user_agent+"&workspace_id="+wid+"&page="+page+timeRangeParameters,
+            url: "https://toggl.com/reports/api/v2/details?user_agent=" + user_agent + "&workspace_id=" + wid + "&page=" + page + timeRangeParameters,
             method: "GET",
             username: process.env.TOGGL_TOKEN,
             password: 'api_token'
@@ -388,11 +449,10 @@ async function getTogglTime(since, until)
         var toggleDetObj = JSON.parse(togglDetResp.body);
         total_count = toggleDetObj.total_count;
 
-        console.log("total_count = "+total_count);
+        console.log("total_count = " + total_count);
         console.log("toggleDetObj.data.length = " + toggleDetObj.data.length);
 
-        for (i = 0; i < toggleDetObj.data.length;i++)
-        {
+        for (i = 0; i < toggleDetObj.data.length; i++) {
             togglEntires.push(toggleDetObj.data[i]);
         }
 
@@ -462,14 +522,14 @@ async function addProject(page, project) {
     const addLineButtonSelector = "#addLineBttn";
     await page.waitForSelector(addLineButtonSelector, { visible: true })
     await page.click(addLineButtonSelector);
-    
+
 
     //Get Row count
     const wbsTableBodySelector = "#wbsGridBody > table > tbody";
     await page.waitForSelector(wbsTableBodySelector, { visible: true })
     var rowNumber = await page.$eval(wbsTableBodySelector, tableBody => tableBody.children.length);
     console.log("rowNumber = " + rowNumber);
-    
+
     //Clicks search button
     var projSearchButtonSelector = "#wbsGridBody > table > tbody > tr:nth-child(" + rowNumber + ") > td:nth-child(1) > div > button";
     await page.waitForSelector(projSearchButtonSelector, { visible: true });
@@ -501,8 +561,7 @@ async function addProject(page, project) {
 
     //Select phase
     var phaseTrSelector = "#wbs2ListBody > table > tbody > tr"
-    if(numProjects>1)
-    {
+    if (numProjects > 1) {
         console.log("Waiting for phase list to empty");
         await page.waitFor((s) => document.querySelectorAll(s).length == 0, {}, phaseTrSelector);
     }
@@ -513,8 +572,7 @@ async function addProject(page, project) {
 
     //Select Task
     var tasksTrSelector = "#wbs3ListBody > table > tbody > tr"
-    if(numPhases>1)
-    {
+    if (numPhases > 1) {
         console.log("Waiting for task list to empty");
         await page.waitFor((s) => document.querySelectorAll(s).length == 0, {}, tasksTrSelector);
     }
@@ -522,7 +580,7 @@ async function addProject(page, project) {
     console.log("Waiting for task search results");
     await page.waitFor((s) => document.querySelectorAll(s).length > 0, {}, tasksTrSelector);
     await selectProjectTableValue(page, tasksTrSelector, project.task);
-    
+
     //Wait for select button to enable
     var selectProjectButtonSelector = "#finishBttn.btn.pn-blue";
     await page.waitForSelector(selectProjectButtonSelector, { visible: true })
@@ -531,7 +589,7 @@ async function addProject(page, project) {
     //Wait for project dialog to go away
     var projectLookupdivSel = "#projectLookupDiv";
     await page.waitForSelector(projectLookupdivSel, { hidden: true })
-    
+
     var laborCodeInputSelector = "#wbsGridBody > table > tbody > tr:nth-child(" + rowNumber + ") > td:nth-child(8) > div > div.inputContainer > input";
 
     if (project.laborCode) {
@@ -552,23 +610,23 @@ async function addProject(page, project) {
             console.log("Skipping day " + dayNum);
             continue;
         }
-                
+
         console.log("Adding day " + dayNum);
-        
+
         var dayInputSel = "#hrsGridBody > table > tbody > tr:nth-child(" + rowNumber + ") > td:nth-child(" + dayNum + ")"
         await page.waitForSelector(dayInputSel, { visible: true });
         await page.click(dayInputSel);
 
-    
+
         const formBoxSel = "#popupForm.open";
         const dayArrowSelector = "#bottomArrow";
-        
+
         try {
             await page.waitForSelector(formBoxSel, { visible: true, timeout: 100 })
         }
         catch (err) {
-            
-            await page.click(dayArrowSelector);            
+
+            await page.click(dayArrowSelector);
             await page.waitForSelector(formBoxSel, { visible: true, timeout: 100 })
         }
 
@@ -579,8 +637,7 @@ async function addProject(page, project) {
 
         const enterChar = String.fromCharCode(13);
 
-        if(currentDay.regular>0)
-        {
+        if (currentDay.regular > 0) {
             var regularString = " " + currentDay.regular.toString() + enterChar;
             await page.type(regularSelector, regularString);
         }
@@ -596,7 +653,7 @@ async function addProject(page, project) {
             var overtime2string = " " + currentDay.overtime2.toString() + enterChar;
             await page.type(overTime2Selector, overtime2string);
         }
-        
+
         if (currentDay.comment) await page.type(comentSelector, currentDay.comment);
     }
 }
@@ -604,10 +661,10 @@ async function addProject(page, project) {
 async function selectProjectTableValue(page, tableTrSelector, value) {
 
     console.log("Selecting value: " + value);
-    var rowCount = await page.$$eval(tableTrSelector, rows=> rows.length);
+    var rowCount = await page.$$eval(tableTrSelector, rows => rows.length);
 
     //Select value if more then one row  
-    var rowIndex = await page.$$eval(tableTrSelector,  (rows, value)=> {
+    var rowIndex = await page.$$eval(tableTrSelector, (rows, value) => {
 
         for (var i = 0; i < rows.length; i++) {
             var curRow = rows[i];
@@ -620,7 +677,7 @@ async function selectProjectTableValue(page, tableTrSelector, value) {
 
     //click row if more then one row
     if (rowCount > 1) {
-    var rowNum = rowIndex + 1;
+        var rowNum = rowIndex + 1;
         var rowSelector = tableTrSelector + ":nth-child(" + rowNum + ") > td:nth-child(1)>input"
         await page.click(rowSelector);
     }
