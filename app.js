@@ -8,7 +8,7 @@ const fs = require('fs');
     if (process.argv.length < 3) throw "Week end date must be passed as argument in YYYY-MM-DD format";
 
 
-    
+
     var weekEndIsoStr = process.argv[2]; //YYYY-MM-DD
 
     var weekEndIsoYearStr = weekEndIsoStr.substr(0, 4);
@@ -50,10 +50,10 @@ function pad(n, width, z) {
 
 function saveManualTimesheetHours(projects, weekEndIsoStr) {
 
-    
 
-        
-    
+
+
+
 
     var manualTimesheet = {};
 
@@ -99,7 +99,7 @@ function saveManualTimesheetHours(projects, weekEndIsoStr) {
             line += "   ";
         }
         console.log(line);
-        timeSheetFileData+= line+"\n";
+        timeSheetFileData += line + "\n";
     }
 
 
@@ -390,7 +390,7 @@ function toggleTimesToProjects(togglTimes, weekStartDateLocal) {
 
 async function getTogglTime(since, until) {
     var wsReqOpt = {
-        url: "https://www.toggl.com/api/v8/workspaces",
+        url: "https://api.track.toggl.com/api/v8/workspaces",
         method: "GET",
         username: process.env.TOGGL_TOKEN,
         password: 'api_token'
@@ -437,7 +437,7 @@ async function getTogglTime(since, until) {
 
     do {
         var togglDetReq = {
-            url: "https://toggl.com/reports/api/v2/details?user_agent=" + user_agent + "&workspace_id=" + wid + "&page=" + page + timeRangeParameters,
+            url: "https://api.track.toggl.com/reports/api/v2/details?user_agent=" + user_agent + "&workspace_id=" + wid + "&page=" + page + timeRangeParameters,
             method: "GET",
             username: process.env.TOGGL_TOKEN,
             password: 'api_token'
@@ -461,6 +461,13 @@ async function getTogglTime(since, until) {
     } while (togglEntires.length < total_count)
 
     return togglEntires;
+}
+
+
+async function sleep(ms) {
+    return new Promise((resolve) => {
+        setTimeout(resolve, ms);
+    });
 }
 
 
@@ -637,24 +644,35 @@ async function addProject(page, project) {
 
         const enterChar = String.fromCharCode(13);
 
+        const waitTimeMs = 500;
+
         if (currentDay.regular > 0) {
             var regularString = " " + currentDay.regular.toString() + enterChar;
+            await sleep(waitTimeMs);
+
             await page.type(regularSelector, regularString);
+            await sleep(waitTimeMs);
         }
 
 
         if (currentDay.overtime > 0) {
             var overtimestring = " " + currentDay.overtime.toString() + enterChar;
             await page.type(overTimeSelector, overtimestring);
+            await sleep(500);
+            await sleep(waitTimeMs);
         }
 
 
         if (currentDay.overtime2 > 0) {
             var overtime2string = " " + currentDay.overtime2.toString() + enterChar;
             await page.type(overTime2Selector, overtime2string);
+            await sleep(waitTimeMs);
         }
 
-        if (currentDay.comment) await page.type(comentSelector, currentDay.comment);
+        if (currentDay.comment) {
+            await page.type(comentSelector, currentDay.comment);
+            await sleep(waitTimeMs);
+        }
     }
 }
 
